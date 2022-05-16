@@ -65,6 +65,59 @@ if [ "$AIRFLOW__CORE__EXECUTOR" != "SequentialExecutor" ]; then
   wait_for_port "Postgres" "$POSTGRES_HOST" "$POSTGRES_PORT"
 fi
 
+: "${AIRFLOW_VERSION=$(airflow version)}"
+export AIRFLOW_VERSION
+echo ${AIRFLOW_VERSION}
+
+load_variables() {
+  VARIABLE_FILE=${AIRFLOW_HOME}/variables.json
+  SECRETS_FILE=${AIRFLOW_HOME}/secrets.env
+  if [[ -e ${VARIABLE_FILE} ]]
+  then
+    tmp_var_file=$(. /apply_secrets.sh ${SECRETS_FILE} ${VARIABLE_FILE})
+    airflow variables import ${tmp_var_file}
+    echo Variables loaded.
+  else
+    echo Variables file ${VARIABLE_FILE} does not exist.
+  fi;
+  rm -f ${tmp_var_file}
+}
+
+load_connections() {
+  CONNECTIONS_FILE=${AIRFLOW_HOME}/connections.json
+  SECRETS_FILE=${AIRFLOW_HOME}/secrets.env
+  if [[ -e ${CONNECTIONS_FILE} ]]
+  then
+    tmp_conn_file=$(. /apply_secrets.sh ${SECRETS_FILE} ${CONNECTIONS_FILE})
+    for conn_id in $(cat ${tmp_conn_file}|jq -r 'keys[]')
+    do
+      airflow connections delete ${conn_id}
+    done
+    case ${AIRFLOW_VERSION} in
+      2.2.2)
+        airflow connections import ${tmp_conn_file}
+        ;;
+      2.0.2)
+        cat ${tmp_conn_file} |jq 'to_entries[]|
+                .key + " --conn-type " + .value.conn_type
+                + (if .value.description != null then " --conn-description " + .value.description else "" end)
+                + (if .value.host != null then " --conn-host " + .value.host else "" end)
+                + (if .value.login != null then " --conn-login " + .value.login else "" end)
+                + (if .value.password != null then " --conn-password " + .value.password else "" end)
+                + (if .value.port != null then " --conn-port " + .value.port else "" end)
+                + (if .value.schema != null then " --conn-schema " + .value.schema else "" end)
+                + (if .value.extra != null then " --conn-extra \"\(.value.extra)\"" else "" end)
+            '|xargs -n 1 -0 -d \\n airflow connections add
+        ;;
+      *)
+        echo Cannot load connections. Unknown AIRFLOW_VERSION
+        ;;
+      esac
+  else
+    echo Connections file ${CONNECTIONS_FILE} does not exist.
+  fi
+  rm -f ${tmp_conn_file}
+}
 
 case "$1" in
   local-runner)
@@ -76,6 +129,8 @@ case "$1" in
       sleep 2
     fi
     airflow users create -r Admin -u admin -e admin@example.com -f admin -l user -p test
+    load_variables
+    load_connections
     exec airflow webserver
     ;;
   resetdb)
