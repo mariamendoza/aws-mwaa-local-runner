@@ -1,0 +1,39 @@
+{
+  "airflow_db": {
+    "conn_type": "mysql",
+    "description": null,
+    "extra": null,
+    "host": "mysql",
+    "login": "root",
+    "password": null,
+    "port": null,
+    "schema": "airflow"
+  },
+  "aws_default": {
+    "conn_type": "aws",
+    "description": null,
+    "extra": null,
+    "host": null,
+    "login": "$AWS_ACCESS_KEY_ID",
+    "password": "$AWS_SECRET_ACCESS_KEY",
+    "port": null,
+    "schema": null
+  },
+  "snowflake_default": {
+    "conn_type": "http",
+    "description": null,
+    "extra": {
+      "extra__snowflake__account": "$SNOWFLAKE_ACCOUNT",
+      "extra__snowflake__database": "$SNOWFLAKE_DATABASE",
+      "extra__snowflake__insecure_mode": false,
+      "extra__snowflake__region": "$SNOWFLAKE_REGION",
+      "extra__snowflake__role": "$SNOWFLAKE_ROLE",
+      "extra__snowflake__warehouse": "WH"
+    },
+    "host": "$SNOWFLAKE_HOST",
+    "login": "$SNOWFLAKE_LOGIN",
+    "password": "$SNOWFLAKE_PASSWORD",
+    "port": null,
+    "schema": "PUBLIC"
+  }
+}
