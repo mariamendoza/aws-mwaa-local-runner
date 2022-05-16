@@ -30,6 +30,11 @@ COPY script/entrypoint.sh /entrypoint.sh
 COPY config/airflow.cfg ${AIRFLOW_USER_HOME}/airflow.cfg
 COPY config/webserver_config.py ${AIRFLOW_USER_HOME}/webserver_config.py
 
+COPY script/apply_secrets.sh /apply_secrets.sh
+COPY config/secrets.env ${AIRFLOW_USER_HOME}/secrets.env
+COPY config/connections.json ${AIRFLOW_USER_HOME}/connections.json
+COPY config/variables.json ${AIRFLOW_USER_HOME}/variables.json
+
 RUN chown -R airflow: ${AIRFLOW_USER_HOME}
 RUN chmod +x /entrypoint.sh
 
